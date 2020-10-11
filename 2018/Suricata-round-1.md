@@ -42,7 +42,7 @@ Shown above is a Snort DNS signature for a domain used in Gootkit campaigns.  In
 
 ```content:"|01|"; offset:2; depth:1;```
 
-![memes1]({{ site.url }}/images/dns1.png)
+![memes1](/2018/images/dns1.png)
 
 Here we are trying to match 0x01 at position 2 (third byte) which indicates that this is a standard query. Positional modifiers are attached after the content has been defined and in this case, we jump 2 bytes from the beginning of the packet data \(offset:2;) to check whether the 3rd byte (depth:1;) matches 0x01 (content:"\|01\|";).  The depth modifier ensures that the signature only checks the following byte after our jump.  If we were writing a signature where 0x01 can be in any of the 10 bytes that follow our jump, we'd write depth:10; however in this case, DNS packets follow the same structure making this a reliable method of identifying a DNS standard query.
 <br/>
@@ -51,7 +51,7 @@ Here we are trying to match 0x01 at position 2 (third byte) which indicates that
 
 Here, we are attempting to detect the flags within a DNS packet.  There are 4 flags, each consisting of 2 bytes and they are Questions, Answer Resource Records (RRs), Authority RRs, and Additional RRs.  Since we have identified this as a standard query, Answer RRs, Authority RRs, and Additional RRs are irrelevant and only apply to query response packets resulting in their bytes remaining static (\|00 00 00 00 00 00\|).  'Questions' is the number of records (or domains, if you like) we are querying.  While this implies that we can query in multiples, such as an A record and an AAAA record in a single query, this is not the case, meaning our content match of \|00 01\| is very reliable.
 
-![memes2]({{ site.url }}/images/dns2.png)
+![memes2](/2018/images/dns2.png)
 
 Additionally, these flags appear 1 byte after our previous content match which we state in the rule with distance:1; (relative from the previous content match, jump forward 1 byte).  We then tell our signature that the content match must occur within the next 8 bytes \(within:8;).
 <br/>
@@ -85,7 +85,7 @@ Since we are working from a buffer known by the Suricata engine, we cannot add o
 
 Going back to our example signature, isdataat:!1,relative; means we are making sure that no data exists immediately after our content match and because dns\_query ends before the null terminator, our 'isdataat' check returns true because we are looking for data outside of the buffer which (from the engine's perspective) does not exist.
 
-![memes3]({{ site.url }}/images/dns3.png)
+![memes3](/2018/images/dns3.png)
 
 <br/>
 <br/>
@@ -137,7 +137,7 @@ In our example, we have:
 
 Byte\_extract is a keyword for identifying bytes at a certain position for us to then save as a variable and use later in some checks/comparisons.  Our byte\_extract is relative so we will be working from the bytes after \|0d 0a 0d 0a\| which was our last positive match.  The signature is telling us to move forward 2 bytes, extract the 2 bytes in that position, and save them as 'Tinba.Pivot' for later use.  Below is a screenshot of the traffic that this is relating to.
 
-![memes4]({{ site.url }}/images/byte_extract_1.png)
+![memes4](/2018/images/byte_extract_1.png)
 
 The bytes of interest in this case are \|c9 9b\| and these are the bytes we are extracting and saving.  At this point, I assume someone is asking why we cannot just write _content:"\|c9 9b\|"; offset:2; depth:2;_ into our rule and I will approach this shortly.
 
@@ -165,7 +165,7 @@ Now that we have our bytes extracted, we can test them!  Our use of byte\_test t
 
 We are now telling byte\_test that we are dealing with 2 bytes (bytes to convert, multipurpose), we want to move 2 bytes forward (offset), it is relative to the last content match (in this context, it is our byte\_extract), and we want to test if our 2 extracted bytes (saved as 'Tinba.Pivot') are equal (operator, =) to the bytes that we have just moved to.  The screenshot below demonstrates where we took our bytes, where we moved to, and it shows that our bytes are equal.
 
-![memes5]({{ site.url }}/images/byte_test_1.png)
+![memes5](/2018/images/byte_test_1.png)
 
 Another perfect use case for byte\_test is if you are detecting a specific protocol that has X flag at Y offset and it can only be certain values.  For example, this example flag is at offset 5 and can only be 0x00, 0x01, 0x02, or 0x03.  Anything other than those values are not accepted.
 
@@ -177,17 +177,17 @@ Our byte\_test above shows that we are looking at offset 5 and this value has to
 
 A second byte\_test.  The difference here is that we are now moving relative to the byte\_test that we have just completed and instead of moving forward by 2 bytes, we are moving forward by 5 bytes (offset is set to 5 here), and we are looking to make sure that our extracted bytes are NOT equal to the bytes in these positions, as shown in the below screenshot.
 
-![memes6]({{ site.url }}/images/byte_test_1_final.png)
+![memes6](/2018/images/byte_test_1_final.png)
 
 Now, earlier on I mentioned that someone may be asking why we cannot write a static content match for \|c9 9b\| here.  The reason being is that these bytes change on each request.  The screenshots below show the HTTP data segment from 4 different HTTP requests yet still from the same sample.
 
-![memes7]({{ site.url }}/images/bytecmp1.png)
+![memes7](/2018/images/bytecmp1.png)
 
-![memes8]({{ site.url }}/images/bytecmp2.png)
+![memes8](/2018/images/bytecmp2.png)
 
-![memes9]({{ site.url }}/images/bytecmp3.png)
+![memes9](/2018/images/bytecmp3.png)
 
-![memes10]({{ site.url }}/images/bytecmp4.png)
+![memes10](/2018/images/bytecmp4.png)
 
 This is a prime example of how to use byte\_* operations to get around traffic like this where most of the data appears to be encoded/encrypted.
 
@@ -204,7 +204,7 @@ Earlier, I mentioned that byte\_test has multiple purposes and this example some
 
 Our 'bytes to convert' is 0 here because we do not need to pull a value from anywhere in the packet, we already know the value we want to be testing with, which is '99' and is stated in our 'value' input.  Our offset is set to 0 because this byte\_test is working relative to our _http\_content\_len_ sticky buffer.  The screenshot below identifies where this sticky buffer is applied and explains why our offset is set to 0.
 
-![memes11]({{ site.url }}/images/bytetest-contentlength.png)
+![memes11](/2018/images/bytetest-contentlength.png)
 
 Our 'string' input tells the byte\_test to store data as a string and the input that follows, 'dec', tells the byte\_test to convert our string to decimal so that we can compare it to our value, which is a decimal.  Finally, the byte\_test will check to see if the data in this buffer, converted to decimal, is greater than 99.  As you can see in the screenshot, one of our sample packets showed a Content-Length of 157 meaning the byte\_test returns true.
 
